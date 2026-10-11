@@ -31,8 +31,8 @@
   function extract() {
     const url = location.href.split("#")[0].slice(0,2000);
     // Amazon search/category pages can contain dozens of prices. Never pretend they are one product.
-    const amazon = /(^|\\.)amazon\\.[a-z.]+$/i.test(location.hostname);
-    const detailPage = /\\/(?:dp|gp\\/product|gp\\/aw\\/d)\\/[a-z0-9]{10}(?:\\/|$)/i.test(location.pathname);
+    const amazon = /(^|\.)amazon\.[a-z.]+$/i.test(location.hostname);
+    const detailPage = /\/(?:dp|gp\/product|gp\/aw\/d)\/[a-z0-9]{10}(?:\/|$)/i.test(location.pathname);
     if (amazon && !detailPage) {
       return {title:"",brand:"",price:null,currency:"GBP",url,
         error:"This is an Amazon search or category page. Open one product listing before scanning."};
