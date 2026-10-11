@@ -26,6 +26,7 @@ Build locally with Node 22+:
 
 ```sh
 npm install
+npm run dev:ui   # optional, preview the hero in your browser
 npm run typecheck
 npm run build:ui
 npm test
