@@ -109,10 +109,24 @@ function App() {
     // Chrome/Brave extension builds can open the existing, fully-functional scanner.
     // Ordinary web previews show actionable instructions instead.
     const extension = (globalThis as unknown as {
-      chrome?: {runtime?: {id?: string}; action?: {openPopup?: () => Promise<void>}}
+      chrome?: {
+        runtime?: {id?: string};
+        action?: {openPopup?: () => Promise<void>};
+        storage?: {local?: {get: (keys: string) => Promise<{jackextSourceTabId?: number}>}};
+        tabs?: {update: (tabId: number, properties: {active: boolean}) => Promise<unknown>}
+      }
     }).chrome;
     if (extension?.runtime?.id && extension.action?.openPopup) {
-      try {await extension.action.openPopup(); setMobileOpen(false); return;} catch { /* browser may not support openPopup */ }
+      try {
+        const saved = await extension.storage?.local?.get("jackextSourceTabId");
+        if (saved?.jackextSourceTabId && extension.tabs) {
+          // Go back to the shopping page: scanning the dashboard itself would be misleading.
+          await extension.tabs.update(saved.jackextSourceTabId, {active: true});
+        }
+        await extension.action.openPopup();
+        setMobileOpen(false);
+        return;
+      } catch { /* Some Brave/Chrome versions do not permit this shortcut. */ }
     }
     showPanel(fallback);
   };
