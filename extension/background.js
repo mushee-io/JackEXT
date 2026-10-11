@@ -33,7 +33,13 @@ chrome.runtime.onMessage.addListener((message,_sender,sendResponse)=>{
     const controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(),12000);
     let res;
-    try{res=await fetch(base+"/api/compare",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({product}),signal:controller.signal});}finally{clearTimeout(timer);}
+    try{
+      res=await fetch(base+"/api/compare",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({product}),signal:controller.signal});
+    } catch (err) {
+      if (err.name==="AbortError") throw new Error("Comparison API timed out. Try again later.");
+      if (base==="http://localhost:3000") throw new Error("No local API is running at localhost:3000. Use Try demo, or deploy and configure the live API.");
+      throw new Error("Cannot reach the comparison API. Check the deployed Vercel URL and network connection.");
+    } finally {clearTimeout(timer);}
     const payload=await res.json();
     if(!res.ok) throw new Error(payload.error || "Price provider unavailable.");
     sendResponse({ok:true,demo:false,offers:compareOffers(product,payload.offers || [])});
