@@ -100,6 +100,10 @@ el("experience").onclick=async()=>{
   const url=chrome.runtime.getURL("experience/index.html");
   const response=await fetch(url);
   if(!response.ok)throw new Error("Full-screen view has not been built yet. Download the packaged extension from GitHub Actions, or run npm install and npm run build:ui before loading the extension.");
+  const [tab]=await chrome.tabs.query({active:true,currentWindow:true});
+  if(tab?.id && /^https?:/.test(tab.url || "")) {
+    await chrome.storage.local.set({jackextSourceTabId:tab.id});
+  }
   await chrome.tabs.create({url});
  }catch(error){status(error.message || "Could not open full-screen experience.");}
 };
