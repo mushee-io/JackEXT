@@ -23,7 +23,7 @@ async function scan(){
   el("title").value=source.title || "";
   el("price").value=source.price ?? "";
   el("currency").value=["GBP","USD","EUR"].includes(source.currency)?source.currency:"GBP";
-  status(source.title ? "Page scanned. Confirm title and price before comparing." : "No product title found; enter it manually.");
+  status(source.error || (source.title ? "Page scanned. Confirm title and price before comparing." : "No product detected. Open an individual product listing or enter the details manually."));
  }catch(err){status(err.message || "Unable to scan this page.");}
 }
 function downloadQuote(quote) {
