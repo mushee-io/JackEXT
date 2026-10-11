@@ -29,9 +29,17 @@
     return {};
   };
   function extract() {
+    const url = location.href.split("#")[0].slice(0,2000);
+    // Amazon search/category pages can contain dozens of prices. Never pretend they are one product.
+    const amazon = /(^|\\.)amazon\\.[a-z.]+$/i.test(location.hostname);
+    const detailPage = /\\/(?:dp|gp\\/product|gp\\/aw\\/d)\\/[a-z0-9]{10}(?:\\/|$)/i.test(location.pathname);
+    if (amazon && !detailPage) {
+      return {title:"",brand:"",price:null,currency:"GBP",url,
+        error:"This is an Amazon search or category page. Open one product listing before scanning."};
+    }
     const p = getJsonProduct();
     const rawOffers = Array.isArray(p.offers) ? p.offers[0] : p.offers || {};
-    const priceMeta = meta('[property="product:price:amount"]','[itemprop="price"]','[name="twitter:data1"]');
+    const priceMeta = meta('[property="product:price:amount"]','[itemprop="price"]');
     const visiblePrice = text(document.querySelector('[itemprop="price"], [data-testid="price"], .a-price .a-offscreen'));
     const value = String(rawOffers.price || rawOffers.lowPrice || priceMeta || visiblePrice || "");
     const parsed = Number(value.replace(/[^0-9.]/g, ""));
@@ -59,7 +67,12 @@
     const btn = document.createElement("button");btn.textContent="Find offers";
     const output = document.createElement("div");output.className="result";
     box.append(close,title,desc,btn,output);document.documentElement.append(host);
+    if (!product.title) {
+      btn.disabled = true;
+      output.textContent = product.error || "Open an individual product page before searching for offers.";
+    }
     btn.onclick=()=> {
+      if (!product.title) return;
       btn.disabled=true;output.textContent="Comparing…";
       chrome.runtime.sendMessage({type:"JACK_COMPARE",product},response=>{
         btn.disabled=false;output.replaceChildren();
