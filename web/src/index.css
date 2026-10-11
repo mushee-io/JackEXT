@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+:root {
+  --font-heading: 'HelveticaNowDisplay-Medium', 'Helvetica Neue', Arial, sans-serif;
+  --font-body: 'HelveticaNowDisplayW01-Rg', 'Helvetica Neue', Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: #000;
+  background: #e6e9e5;
+}
+button, a { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 4px;
+}
+.logo-word { font-family: var(--font-heading); }
+.hero-video {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  object-position: 70% center;
+  pointer-events: none;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.type-cursor { animation: blink 1s step-end infinite; }
+.action-pills {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.action-pills.ready { opacity: 1; transform: translateY(0); }
+.panel-enter { animation: panelIn 0.25s ease both; }
+@keyframes panelIn {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .type-cursor { animation: none; }
+  .action-pills, .panel-enter { transition: none; animation: none; }
+}
