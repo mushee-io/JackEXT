@@ -14,6 +14,25 @@
 - [ ] M9: 33JACK account connection and optional invoice hand-off (requires separate auth and approvals).
 - [ ] M10: Mobile PWA/share-sheet widget and eventual Android overlay; iOS cannot use a system-wide floating Chrome extension.
 
+## New design (v0.2)
+
+- The **extension popup** has an editorial, pill-button redesign inspired by the supplied Mainframe visual direction, while keeping the existing scan, demo, live-API and purchase-estimate actions.
+- The **full-screen JackEXT experience** is built with React, TypeScript, Vite and Tailwind CSS from `web/`. It includes the supplied mouse-scrubbed background video, responsive navigation, blurred intro, typewriter and animated action pills, adapted to JackEXT branding.
+- The video does not autoplay and is fetched from the supplied external CloudFront URL. The font stylesheets are also loaded remotely; the browser uses sans-serif fallbacks when unavailable.
+- The full-screen view is included in the **GitHub Actions packaged extension artifact** after CI completes. In the normal GitHub source ZIP it is not present until you build it locally. The popup's **Full-screen** control explains this if the build is missing.
+- The full-screen actions open the existing extension popup when supported by Chrome/Brave; otherwise they display step-by-step instructions. This is not a claim that live product providers are configured.
+
+Build locally with Node 22+:
+
+```sh
+npm install
+npm run typecheck
+npm run build:ui
+npm test
+```
+
+Then load the `extension/` folder through `brave://extensions` (or `chrome://extensions`), or download the **JackEXT-Brave-Chrome-Unpacked** artifact from the successful GitHub Actions workflow, extract it and load that extracted folder.
+
 ## Local test (no provider account required)
 1. Visit `chrome://extensions` in desktop Chrome.
 2. Enable **Developer mode** → **Load unpacked** → select the `extension` folder.
