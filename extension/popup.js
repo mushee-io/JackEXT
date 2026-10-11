@@ -71,3 +71,35 @@ el("widget").onclick=async()=>{
  catch(err){status(err.message);}
 };
 (async()=>{const saved=await chrome.storage.local.get({jackextEndpoint:"http://localhost:3000"});el("endpoint").value=saved.jackextEndpoint;await scan();})();
+
+
+const typeLine="Find the same thing for less. Anywhere you shop.";
+const typeTarget=el("hero-type");
+const reducedMotion=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if(reducedMotion){typeTarget.textContent=typeLine;}
+else{
+ let shown=0;
+ const typing=()=>{
+   typeTarget.replaceChildren(document.createTextNode(typeLine.slice(0,shown)));
+   if(shown<typeLine.length){
+     const cursor=document.createElement("span");cursor.className="cursor";cursor.setAttribute("aria-hidden","true");
+     typeTarget.append(cursor);
+   }
+ };
+ typing();
+ setTimeout(()=>{
+   const timer=setInterval(()=>{
+     shown+=1;typing();
+     if(shown>=typeLine.length)clearInterval(timer);
+   },38);
+ },600);
+}
+setTimeout(()=>document.querySelector(".quick-actions")?.classList.add("ready"),400);
+el("experience").onclick=async()=>{
+ try{
+  const url=chrome.runtime.getURL("experience/index.html");
+  const response=await fetch(url);
+  if(!response.ok)throw new Error("Full-screen view has not been built yet. Download the packaged extension from GitHub Actions, or run npm install and npm run build:ui before loading the extension.");
+  await chrome.tabs.create({url});
+ }catch(error){status(error.message || "Could not open full-screen experience.");}
+};
