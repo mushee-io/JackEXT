@@ -4,7 +4,10 @@ export function tokens(value) {
   return [...new Set(String(value || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, " ").split(" ").filter(w => w.length > 1 && !stop.has(w)))];
 }
 export function parseMoney(value) {
-  const n = typeof value === "number" ? value : Number(String(value ?? "").replace(/[^0-9.-]/g, ""));
+  if (value === null || value === undefined || String(value).trim() === "") return null;
+  const cleaned = typeof value === "number" ? value : String(value).replace(/[^0-9.-]/g, "");
+  if (cleaned === "" || cleaned === "-" || cleaned === ".") return null;
+  const n = Number(cleaned);
   return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
 }
 export function scoreMatch(source, offer) {
