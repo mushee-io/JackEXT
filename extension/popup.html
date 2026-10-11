@@ -1,18 +1,64 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>JackEXT</title><link rel="stylesheet" href="popup.css"></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://db.onlinewebfonts.com/c/5ac3fe7c6abd2f62067f266d89671492?family=HelveticaNowDisplay-Medium">
+  <link rel="stylesheet" href="https://db.onlinewebfonts.com/c/1aa3377e489837a26d019bba501e779d?family=HelveticaNowDisplayW01-Rg">
+  <title>JackEXT® — Shopping scout</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
 <body>
-<header><div><span class="eyebrow">33JACK SHOPPING ADAPTER</span><h1>Jack<span>EXT</span></h1></div><span class="tag">Beta 0.1</span></header>
-<p class="lead">Scan a product, compare matching offers, and draft an estimate.</p>
-<form id="form">
-<label for="title">Product</label><input id="title" maxlength="220" placeholder="e.g. black leather tote bag" required>
-<div class="split"><div><label for="price">Current price</label><input id="price" type="number" min="0" step=".01" placeholder="10.00"></div>
-<div><label for="currency">Currency</label><select id="currency"><option>GBP</option><option>USD</option><option>EUR</option></select></div></div>
-<label for="endpoint">Comparison API</label><input id="endpoint" placeholder="http://localhost:3000">
-<div class="actions"><button type="submit" id="compare">Compare live</button><button type="button" class="secondary" id="demo">Try demo</button></div>
-</form>
-<div class="actions subactions"><button type="button" class="linkbtn" id="scan">↻ Scan this page</button><button type="button" class="linkbtn" id="widget">◫ Show floating widget</button></div>
-<div id="status" role="status" aria-live="polite"></div><div id="results"></div>
-<footer>Only scan pages you choose. Demo prices are examples; real offers require a configured provider. Always verify merchant checkout totals.</footer>
-<script type="module" src="popup.js"></script>
-</body></html>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-word">JackEXT®</span>
+      <span class="brand-mark" aria-hidden="true">✳︎</span>
+    </div>
+    <span class="edition">33JACK / BETA 0.2</span>
+  </header>
+
+  <main>
+    <section class="hero" aria-label="Welcome to JackEXT">
+      <p class="blur-intro">Hey there, meet J.A.C.K.,<br>your adaptive shopping scout.</p>
+      <p id="hero-type" class="hero-type" aria-label="Find the same thing for less. Anywhere you shop."></p>
+      <div class="quick-actions">
+        <button type="button" class="pill" id="scan">Scan this page</button>
+        <button type="button" class="pill" id="demo">Try demo</button>
+        <button type="button" class="pill" id="widget">Floating widget</button>
+        <button type="button" class="pill outline" id="experience">Full-screen ↗</button>
+      </div>
+    </section>
+
+    <form id="form">
+      <div class="section-heading"><h2>Find a better price.</h2><span>01 / SCOUT</span></div>
+      <label for="title">Product</label>
+      <input id="title" maxlength="220" placeholder="Open a product or enter its name" required>
+      <div class="split">
+        <div>
+          <label for="price">Current price</label>
+          <input id="price" type="number" min="0" step=".01" placeholder="49.99">
+        </div>
+        <div>
+          <label for="currency">Currency</label>
+          <select id="currency"><option>GBP</option><option>USD</option><option>EUR</option></select>
+        </div>
+      </div>
+      <details class="api-settings">
+        <summary>Live price-provider settings</summary>
+        <label for="endpoint">Comparison API</label>
+        <input id="endpoint" placeholder="https://your-project.vercel.app">
+        <p>Live comparison requires a deployed API with an authorised provider. Demo offers are examples.</p>
+      </details>
+      <button type="submit" id="compare" class="compare-btn">Compare live <span aria-hidden="true">↗</span></button>
+    </form>
+
+    <div id="status" role="status" aria-live="polite"></div>
+    <div id="results"></div>
+  </main>
+  <footer>
+    <div class="footer-brand">JackEXT<span>✳︎</span></div>
+    <p>Only scans pages you choose. Demo prices are illustrative. Always verify the actual seller, shipping and checkout total. Purchase estimates are not merchant invoices.</p>
+  </footer>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
