@@ -56,3 +56,6 @@ footer{margin-top:8px;padding:18px 24px 23px;border-top:1px solid #d2d2cf}
 .footer-brand span{font-size:18px}
 footer p{max-width:350px;font-size:10px;line-height:1.5;color:#6b6e6b}
 @media(prefers-reduced-motion:reduce){.hero-type .cursor{animation:none}.quick-actions{opacity:1;transform:none;transition:none}}
+
+.scan-feedback{margin:10px 2px 0;min-height:16px;max-width:365px;font-size:12px;line-height:1.45;color:#333;overflow-wrap:anywhere}
+.scan-feedback:empty{display:none}
