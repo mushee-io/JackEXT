@@ -1,7 +1,11 @@
 import {quoteDraft} from "./engine.js";
 const el=id=>document.getElementById(id);
 let source={};
-const status=(msg)=>el("status").textContent=msg;
+const status=(msg)=>{
+ el("status").textContent=msg;
+ const quick=el("scan-status");
+ if(quick)quick.textContent=msg;
+};
 const getProduct=()=>({title:el("title").value.trim(),price:el("price").value===""?null:Number(el("price").value),currency:el("currency").value,brand:source.brand || "",url:source.url || ""});
 const allowedBase=url=> /^https:\/\/[\w.-]+\.vercel\.app$/.test(url) || url==="http://localhost:3000";
 async function saveEndpoint(){
@@ -11,19 +15,30 @@ async function saveEndpoint(){
 }
 async function inject(){
  const [tab]=await chrome.tabs.query({active:true,currentWindow:true});
- if(!tab?.id || !/^https?:/.test(tab.url || ""))throw new Error("Open a regular shopping webpage first.");
- await chrome.scripting.executeScript({target:{tabId:tab.id},files:["content.js"]});
+ if(!tab?.id || !/^https?:/.test(tab.url || "")){
+   throw new Error("Open an individual product page, then click JackEXT in the Brave toolbar. The full-screen JackEXT tab itself cannot be scanned.");
+ }
+ try {await chrome.scripting.executeScript({target:{tabId:tab.id},files:["content.js"]});}
+ catch(error){throw new Error("Cannot scan this page. Reload the product tab and reopen JackEXT. "+String(error.message || error));}
+ await chrome.storage.local.set({jackextSourceTabId:tab.id});
  return tab;
 }
 async function scan(){
+ status("Scanning the product page…");
  try{
   const tab=await inject();
-  const response=await chrome.tabs.sendMessage(tab.id,{type:"JACK_EXTRACT"});
+  let response;
+  try{response=await chrome.tabs.sendMessage(tab.id,{type:"JACK_EXTRACT"});}
+  catch(error){throw new Error("Scanner did not respond. Refresh the product page and reopen JackEXT.");}
   source=response.product || {};
   el("title").value=source.title || "";
   el("price").value=source.price ?? "";
   el("currency").value=["GBP","USD","EUR"].includes(source.currency)?source.currency:"GBP";
-  status(source.error || (source.title ? "Page scanned. Confirm title and price before comparing." : "No product detected. Open an individual product listing or enter the details manually."));
+  if(source.error){status(source.error);}
+  else if(source.title){
+    const price=source.price==null ? "Price not detected — enter it manually." : source.currency+" "+Number(source.price).toFixed(2);
+    status("✓ Product found: "+source.title.slice(0,66)+(source.title.length>66?"…":"")+" · "+price+" · Ready to compare.");
+  }else{status("No product detected. Open an individual product listing or enter the details manually.");}
  }catch(err){status(err.message || "Unable to scan this page.");}
 }
 function downloadQuote(quote) {
