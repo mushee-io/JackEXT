@@ -8,6 +8,8 @@ const SENSITIVITY = 0.8;
 const EMAIL = "contact@mushee.xyz";
 const TAGLINE = "Spot it anywhere. Find the better price. Know what you're paying before you buy.";
 type PanelName = "scout" | "compare" | "widget" | "guide" | null;
+type ScannedProduct = {title: string; price: number | null; brand?: string; currency: string; url?: string; error?: string};
+type DemoOffer = {title: string; price: number; currency: string; shipping: number | null; hasShipping: boolean; savings: number | null};
 
 function useTypewriter(text: string, speed = 38, startDelay = 600) {
   const [shown, setShown] = useState(0);
@@ -68,6 +70,9 @@ function App() {
   const [pillsReady, setPillsReady] = useState(false);
   const [panel, setPanel] = useState<PanelName>(null);
   const [copyStatus, setCopyStatus] = useState("");
+  const [scannedProduct, setScannedProduct] = useState<ScannedProduct | null>(null);
+  const [scanMessage, setScanMessage] = useState("");
+  const [demoOffers, setDemoOffers] = useState<DemoOffer[]>([]);
   const {displayed, done} = useTypewriter(TAGLINE);
 
   const seekNext = useCallback(() => {
@@ -105,30 +110,69 @@ function App() {
     setMobileOpen(false);
   };
 
-  const openScanner = async (fallback: Exclude<PanelName, null>) => {
-    // Chrome/Brave extension builds can open the existing, fully-functional scanner.
-    // Ordinary web previews show actionable instructions instead.
-    const extension = (globalThis as unknown as {
-      chrome?: {
-        runtime?: {id?: string};
-        action?: {openPopup?: () => Promise<void>};
-        storage?: {local?: {get: (keys: string) => Promise<{jackextSourceTabId?: number}>}};
-        tabs?: {update: (tabId: number, properties: {active: boolean}) => Promise<unknown>}
-      }
-    }).chrome;
-    if (extension?.runtime?.id && extension.action?.openPopup) {
-      try {
-        const saved = await extension.storage?.local?.get("jackextSourceTabId");
-        if (saved?.jackextSourceTabId && extension.tabs) {
-          // Go back to the shopping page: scanning the dashboard itself would be misleading.
-          await extension.tabs.update(saved.jackextSourceTabId, {active: true});
-        }
-        await extension.action.openPopup();
-        setMobileOpen(false);
-        return;
-      } catch { /* Some Brave/Chrome versions do not permit this shortcut. */ }
+  const extensionApi = () => (globalThis as unknown as {
+    chrome?: {
+      runtime?: {
+        id?: string;
+        sendMessage?: (payload: unknown) => Promise<{
+          ok?: boolean;
+          error?: string;
+          product?: ScannedProduct;
+          tabId?: number;
+          offers?: DemoOffer[];
+        }>
+      };
+      tabs?: {update: (tabId: number, properties: {active: boolean}) => Promise<unknown>}
     }
-    showPanel(fallback);
+  }).chrome;
+
+  const openScanner = async (fallback: Exclude<PanelName, null>) => {
+    const extension = extensionApi();
+    setPanel(fallback);
+    setDemoOffers([]);
+    if (!extension?.runtime?.id || !extension.runtime.sendMessage) {
+      setScanMessage("Open JackEXT from an individual product page in Brave to enable scanning.");
+      return;
+    }
+    setScanMessage(fallback === "widget" ? "Opening floating widget on the shopping page…" : "Scanning the shopping page…");
+    try {
+      const response=await extension.runtime.sendMessage({
+        type: fallback === "widget" ? "JACK_SHOW_WIDGET_SOURCE" : "JACK_SCAN_SOURCE"
+      });
+      if(!response?.ok || !response.product) throw new Error(response?.error || "The scan didn't return a product.");
+      setScannedProduct(response.product);
+      if(response.product.error) {
+        setScanMessage(response.product.error);
+        return;
+      }
+      if(!response.product.title) {
+        setScanMessage("No product detected. Open a specific product listing rather than search results.");
+        return;
+      }
+      const price = response.product.price == null
+        ? "Price not found — confirm manually in the extension"
+        : response.product.currency + " " + response.product.price.toFixed(2);
+      setScanMessage("Product scanned successfully · " + price);
+      if(fallback === "widget" && response.tabId !== undefined && extension.tabs) {
+        try {await extension.tabs.update(response.tabId,{active:true});}
+        catch {setScanMessage("Widget opened. Return to the shopping tab to see it.");}
+      }
+    } catch(error) {
+      setScanMessage(error instanceof Error ? error.message : "Unable to scan. Return to a shopping page and reopen JackEXT.");
+    }
+  };
+
+  const runDemo = async () => {
+    if(!scannedProduct?.title) return;
+    setScanMessage("Comparing demo prices…");
+    try{
+      const result=await extensionApi()?.runtime?.sendMessage?.({type:"JACK_COMPARE",product:scannedProduct,demo:true});
+      if(!result?.ok) throw new Error(result?.error || "Demo comparison failed.");
+      setDemoOffers(result.offers || []);
+      setScanMessage("DEMO OFFERS ONLY · These prices are examples, not live merchant listings.");
+    }catch(error){
+      setScanMessage(error instanceof Error ? error.message : "Demo comparison failed.");
+    }
   };
 
   const copyEmail = async () => {
@@ -243,10 +287,33 @@ function App() {
                 <button type="button" aria-label="Close information" className="text-xl" onClick={() => setPanel(null)}>×</button>
               </div>
               <p className="mt-2 text-sm leading-relaxed">{panelContent[panel].description}</p>
+              {scanMessage && <p role="status" aria-live="polite" className="mt-3 rounded-lg bg-black/10 px-3 py-2 text-sm">{scanMessage}</p>}
+              {scannedProduct?.title && (
+                <div className="mt-3 rounded-xl border border-black/15 bg-white p-3">
+                  <p className="text-xs uppercase tracking-widest">Detected product</p>
+                  <p className="mt-1 text-base font-medium">{scannedProduct.title}</p>
+                  <p className="mt-1 text-sm">{scannedProduct.price == null ? "Price needs manual confirmation" : scannedProduct.currency+" "+scannedProduct.price.toFixed(2)}</p>
+                </div>
+              )}
+              {demoOffers.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider">DEMO · Not real merchant prices</p>
+                  {demoOffers.slice(0,3).map((offer,index)=>(
+                    <div key={index} className="rounded-lg border border-black/10 bg-white p-3 text-sm">
+                      <p>{offer.title}</p>
+                      <p>{offer.currency} {offer.price.toFixed(2)} + {offer.hasShipping ? offer.shipping?.toFixed(2)+" shipping" : "unconfirmed shipping"}</p>
+                      {offer.savings != null && <p>Illustrative saving: {offer.currency} {offer.savings.toFixed(2)}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
               <ol className="mt-3 list-inside list-decimal space-y-1 text-sm">
                 {panelContent[panel].steps.map(step => <li key={step}>{step}</li>)}
               </ol>
-              <button className="mt-4 rounded-full bg-black px-4 py-2 text-sm text-white" onClick={() => void openScanner(panel === "guide" ? "scout" : panel)}>Open the scanner ↗</button>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button className="rounded-full bg-black px-4 py-2 text-sm text-white" onClick={() => void openScanner(panel === "guide" ? "scout" : panel)}>Scan again ↻</button>
+                {scannedProduct?.title && <button className="rounded-full border border-black px-4 py-2 text-sm" onClick={() => void runDemo()}>Try demo comparison</button>}
+              </div>
             </section>
           )}
         </div>
