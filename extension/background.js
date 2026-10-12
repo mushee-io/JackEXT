@@ -16,7 +16,33 @@ const demoResults = source => {
     {title,price:8.75,shipping:2,currency:source.currency || "GBP",url:"https://example.com/demo-b",seller:"Example merchant B",condition:"New"}
   ];
 };
+// Full-screen experience scans the original shopping tab, never its own chrome-extension:// page.
+async function scanRememberedTab(showWidget=false) {
+  const saved=await chrome.storage.local.get("jackextSourceTabId");
+  const tabId=saved.jackextSourceTabId;
+  if(!Number.isInteger(tabId)) throw new Error("No shopping tab selected. Open an individual product page, then click JackEXT in Brave's toolbar.");
+  let tab;
+  try {tab=await chrome.tabs.get(tabId);}
+  catch {throw new Error("The original shopping tab was closed. Open a product page and relaunch JackEXT from its toolbar icon.");}
+  if(!/^https?:\/\//i.test(tab.url || "")) throw new Error("The remembered tab is not a normal shopping page. Open a product listing and relaunch JackEXT.");
+  try {
+    await chrome.scripting.executeScript({target:{tabId},files:["content.js"]});
+    const result=await chrome.tabs.sendMessage(tabId,{type:"JACK_EXTRACT"});
+    if(!result?.product) throw new Error("No scan result was returned.");
+    if(showWidget) await chrome.tabs.sendMessage(tabId,{type:"JACK_WIDGET"});
+    return {ok:true,product:result.product,tabId};
+  }catch(err){
+    throw new Error("Cannot scan the original tab. Return to the shopping page, refresh it, and reopen JackEXT from the toolbar. Details: "+String(err?.message || err));
+  }
+}
+
 chrome.runtime.onMessage.addListener((message,_sender,sendResponse)=>{
+  if(message?.type==="JACK_SCAN_SOURCE" || message?.type==="JACK_SHOW_WIDGET_SOURCE") {
+    scanRememberedTab(message.type==="JACK_SHOW_WIDGET_SOURCE")
+      .then(result=>sendResponse(result))
+      .catch(err=>sendResponse({ok:false,error:String(err.message || err)}));
+    return true;
+  }
   if(message?.type!=="JACK_COMPARE") return;
   (async()=>{
     const product=message.product || {};
